@@ -7,7 +7,7 @@
 // port to listen to
 var PORT = 9494; // Change to your port number
 
-// x's should be replaced with your EC2 private ip
+// #'s should be replaced with your EC2 private ip
 var HOST = '0.0.0.0';
 
 // Load datagram module
@@ -116,112 +116,163 @@ server.on('message', function (msg, remote) {
 
     var accum9= msgparse.slice(138,146);//engine coolant temp data 1/116th degree celcius data signed
     accum9 = (parseInt(accum9, 16) *16);//takes the value and makes it a celsius signed number(might need to alter for negative values)
+    var accum10 = msgparse.slice(146, 154); //fuel rate data milliters per hour
+    accum10 = parseInt(accum10, 16) * 0.00026417; //this is converting milliliters to gallons
 
+    var accum11 = msgparse.slice(154, 162); //voltage in mv
+    accum11 = parseInt(accum11, 16) / 1000; //this takes the decimal value and divides by 1000 for volts value
 
+    var accum12 = msgparse.slice(162, 170); //calculated trip odometer in meters
+    accum12 = parseInt(accum12, 16) * 0.000621371; //takes meters to miles
 
-    var accum10= msgparse.slice(146,154); //fuel rate data milliters per hour
-    accum10=(parseInt(accum10,16) * 0.00026417);//this is converting milliliters to gallons   
+    var accum13 = msgparse.slice(170, 178); //calculated fuel usafe
+    accum13 = parseInt(accum13, 16) * 0.00026417; //takes the milliliters to US  gallons
 
-    var accum11= msgparse.slice(154,162);//voltage in mv
-    accum11= (parseInt(accum11, 16) /1000);//this takes the decimal value and divides by 1000 for volts value
+    var accumcontents =
+  "Accum contents =    " +
+  "\n Distance Traveled:   " +
+  accum0 +
+  "\n Ignition Status:   " +
+  accum1 +
+  "\n MIL Status:   " +
+  accum2 +
+  "\n Vehicle Speed:   " +
+  accum3 +
+  "\n Engine Speed:   " +
+  accum4 +
+  "\nThrottle Position:   " +
+  accum5 +
+  "\nOdometer:   " +
+  accum6 +
+  "\nFuel Level Percentage:   " +
+  accum7 +
+  "\nFuel Level Remaining:   " +
+  accum8 +
+  "\nEngine Coolant Temp:   " +
+  accum9 +
+  "\nFuel Rate:   " +
+  accum10 +
+  "\nBattery Voltage:   " +
+  accum11 +
+  "\nCalculated Trip Odometer:   " +
+  accum12 +
+  "\nCalculated Fuel Usage:   " +
+  accum13 +
+  "\n";
 
-    var accum12= msgparse.slice(162,170);//calculated trip odometer in meters
-        accum12=(parseInt(accum12, 16) *0.000621371) //takes meters to miles
-
-    var accum13= msgparse.slice(170,178);//calculated fuel usafe 
-        accum13=(parseInt(accum13, 16) *0.00026417); //takes the milliliters to US  gallons
-
-        var accumcontents= ('Accum contents =    '+"\n Distance Traveled:   "+accum0+      '\n Ignition Status:   '+accum1 +      '\n MIL Status:   '+accum2 +      '\n Vehicle Speed:   '+accum3 +      '\n Engine Speed:   '+accum4 +      '\nThrottle Position:   '+accum5 +      '\nOdometer:   '+accum6 +      '\nFuel Level Percentage:   ' + accum7 +      '\nFuel Level Remaining:   ' + accum8 +      '\nEngine Coolant Temp:   ' + accum9 +      '\nFuel Rate:   ' +accum10 + '\nBattery Voltage:   ' +accum11 + '\nCalculated Trip Odometer:   ' +accum12 + '\nCalculated Fuel Usage:   ' +accum13 + '\n');
-
-
-
-
-
-
-     console.log('Accum contents =  '+ accumcontents);
-
-
-
-
+console.log("Accum contents =  " + accumcontents);
     }
 
     
+var ack2 = msgparse.slice(0, 38);
+var seqID = ack2.slice(22, 26);
+console.log("SEQ ID===" + seqID);
 
+var mobileID = ack2.slice(4, 14);
+console.log(
+  "MOBILE ID===" + mobileID + "EVENT ID===" + event + "SEQ ID===" + seqID
+);
+var ServiceType = ack2.slice(18, 20);
 
+var optionsHeader = ack2.slice(0, 18);
+// console.log(' Options sHeader===' + optionsHeader);
 
-	  var ack2 = msgparse.slice(0, 38);
-	  var seqID=ack2.slice(22, 26)
-	  console.log('SEQ ID===' + seqID);
-
-	  var mobileID=ack2.slice(4, 14);
-	  console.log('MOBILE ID===' + mobileID + 'EVENT ID===' + event + 'SEQ ID===' + seqID );
-	  var ServiceType=ack2.slice(18, 20);
-	  
-  var optionsHeader=ack2.slice(0, 18);
-      // console.log(' Options sHeader===' + optionsHeader);
-
-  var Messagetype=ack2.slice(20, 22);
-  // console.log(' Messagetype ===' + Messagetype);
-  var ack=( optionsHeader.toString('hex') + Acktype.toString('hex')  + seqID.toString('hex') + Messagetype.toString('hex')+ APPVer.toString('hex'))
-  testBuff = new Buffer(ack, 'hex');
+var Messagetype = ack2.slice(20, 22);
+// console.log(' Messagetype ===' + Messagetype);
+var ack =
+  optionsHeader.toString("hex") +
+  Acktype.toString("hex") +
+  seqID.toString("hex") +
+  Messagetype.toString("hex") +
+  APPVer.toString("hex");
+testBuff = new Buffer(ack, "hex");
 // console.log(testBuff);
 
-  //console.log('data version:' +data);
-if (ServiceType === "01"){
-	  	 console.log('ACK THIS ONE:');
-	  	  // SEND ACK BACK 
-    server.send(testBuff, 0, testBuff.length, remote.port, remote.address, function(err, bytes) {
-	  if (err) throw err;
-	  //console.log('UDP message sent to ' + remote.address +':'+ remote.port + '\n');
-	});
-
-  }
-
+//console.log('data version:' +data);
+if (ServiceType === "01") {
+  console.log("ACK THIS ONE:");
+  // SEND ACK BACK
+  server.send(
+    testBuff,
+    0,
+    testBuff.length,
+    remote.port,
+    remote.address,
+    function(err, bytes) {
+      if (err) throw err;
+      //console.log('UDP message sent to ' + remote.address +':'+ remote.port + '\n');
+    }
+  );
+}
 
 
  
- if (event === "30"){
+ if (event === "30") {
   event = "Power OFF";
-  } else if (event === "31"){
+} else if (event === "31") {
   event = "Power ON";
-  }else if (event === "06"){
+} else if (event === "06") {
   event = "DRIVE";
-  }else if (event === "02"){
+} else if (event === "02") {
   event = " Ignition OFF";
-  }else if (event === "03"){
+} else if (event === "03") {
   event = "Ignition ON";
-  }else if (event === "35"){
+} else if (event === "35") {
   event = "FW upgrade";
-  }else if (event === "08"){
+} else if (event === "08") {
   event = "POLL";
-  }else if (event === "70"){
+} else if (event === "70") {
   event = "TOW ";
-  }else if (event === "40"){
+} else if (event === "40") {
   event = "HarshTurn";
-  }else if (event === "3d"){
+} else if (event === "3d") {
   event = "Rapid Acelleraton";
-  }else if (event === "3e"){
+} else if (event === "3e") {
   event = "Rapid Decelleration";
-  }else if (event === "3f"){
+} else if (event === "3f") {
   event = "IMPACT Detection";
-  }else if (event === "33"){
+} else if (event === "33") {
   event = "LOW BATT ";
-  }else if (event === "79"){
+} else if (event === "79") {
   event = "Vitals INFO ";
-  }else if (event === "6b"){
+} else if (event === "6b") {
   event = "Daily report ";
+}
+LINEBREAK =
+  "-------------------------------------------------------------------------------------------------------------------------------------------------------------------- \n";
+
+// console.log('ack string:' + optionsHeader + Acktype + Messagetype + seqID + APPVer);
+console.log(
+  new Date(Date.now()).toLocaleString() +
+    "    Mobile ID:" +
+    mobileID +
+    "\n" +
+    "     Event: " +
+    event +
+    "\n"
+);
+parsed =
+  "\n" +
+  new Date(Date.now()).toLocaleString() +
+  "   Mobile ID:" +
+  mobileID +
+  "     Event: " +
+  event +
+  "GPS:   " +
+  convlat2 / 10000000 +
+  " " +
+  convlong2 / 10000000 +
+  "\n" +
+  accumcontents +
+  LINEBREAK;
+fs.appendFile(
+  "/node_udp_server/node_udp_server.log",
+  parsed,
+  function(err) {
+    if (err) return console.log(err);
+    // console.log('RAW > /Users/nethmaison/Desktop/node_udp_server/node_udp_server.txt');
   }
-  
-
-LINEBREAK=("-------------------------------------------------------------------------------------------------------------------------------------------------------------------- \n")
-
-  // console.log('ack string:' + optionsHeader + Acktype + Messagetype + seqID + APPVer);
-  console.log(new Date(Date.now()).toLocaleString() +'    Mobile ID:' + mobileID + '\n' + "     Event: " + event+ '\n');
-  parsed = ('\n'+new Date(Date.now()).toLocaleString() +'   Mobile ID:' + mobileID +  "     Event: " + event+ "GPS:   "+ (convlat2/10000000)+ " "+(convlong2/10000000) +'\n'+ accumcontents +LINEBREAK)
-    fs.appendFile('/Users/Monument/Desktop/node_udp_server/node_udp_server.log', parsed, function (err) {
- 	 if (err) return console.log(err);
-  	// console.log('RAW > /Users/nethmaison/Desktop/node_udp_server/node_udp_server.txt');
-	});
+);
  
 
 
